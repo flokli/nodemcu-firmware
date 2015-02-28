@@ -297,9 +297,8 @@ class ELFFile:
         if os.getenv('XTENSA_CORE')=='lx106':
             tool_objcopy = "xt-objcopy"
         subprocess.check_call([tool_objcopy, "--only-section", section, "-Obinary", self.name, ".tmp.section"])
-        f = open(".tmp.section", "rb")
-        data = f.read()
-        f.close()
+        with open(".tmp.section", "rb") as f:
+            data = f.read()
         os.remove(".tmp.section")
         return data
 
