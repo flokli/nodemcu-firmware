@@ -17,6 +17,13 @@
 # this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
 # Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from __future__ import print_function
+
+try:
+    xrange
+except NameError:
+    xrange = range
+
 import sys
 import struct
 import serial
@@ -128,7 +135,7 @@ class ESPROM:
 
     """ Try connecting repeatedly until successful, or giving up """
     def connect(self):
-        print 'Connecting...'
+        print('Connecting...')
 
         # RTS = CH_PD (i.e reset)
         # DTR = GPIO0
@@ -275,7 +282,7 @@ class ELFFile:
                 tool_nm = "xt-nm"
             proc = subprocess.Popen([tool_nm, self.name], stdout=subprocess.PIPE)
         except OSError:
-            print "Error calling "+tool_nm+", do you have Xtensa toolchain in PATH?"
+            print("Error calling "+tool_nm+", do you have Xtensa toolchain in PATH?")
             sys.exit(1)
         for l in proc.stdout:
             fields = l.strip().split()
@@ -386,9 +393,9 @@ if __name__ == '__main__':
     if args.operation == 'load_ram':
         image = ESPFirmwareImage(args.filename)
 
-        print 'RAM boot...'
+        print('RAM boot...')
         for (offset, size, data) in image.segments:
-            print 'Downloading %d bytes at %08x...' % (size, offset),
+            print('Downloading %d bytes at %08x...' % (size, offset), end=' ')
             sys.stdout.flush()
             esp.mem_begin(size, math.ceil(size / float(esp.ESP_RAM_BLOCK)), esp.ESP_RAM_BLOCK, offset)
 
@@ -397,17 +404,17 @@ if __name__ == '__main__':
                 esp.mem_block(data[0:esp.ESP_RAM_BLOCK], seq)
                 data = data[esp.ESP_RAM_BLOCK:]
                 seq += 1
-            print 'done!'
+            print('done!')
 
-        print 'All segments done, executing at %08x' % image.entrypoint
+        print('All segments done, executing at %08x' % image.entrypoint)
         esp.mem_finish(image.entrypoint)
 
     elif args.operation == 'read_mem':
-        print '0x%08x = 0x%08x' % (args.address, esp.read_reg(args.address))
+        print('0x%08x = 0x%08x' % (args.address, esp.read_reg(args.address)))
 
     elif args.operation == 'write_mem':
         esp.write_reg(args.address, args.value, args.mask, 0)
-        print 'Wrote %08x, mask %08x to %08x' % (args.value, args.mask, args.address)
+        print('Wrote %08x, mask %08x to %08x' % (args.value, args.mask, args.address))
 
     elif args.operation == 'dump_mem':
         f = file(args.filename, 'wb')
@@ -415,9 +422,9 @@ if __name__ == '__main__':
             d = esp.read_reg(args.address+(i*4))
             f.write(struct.pack('<I', d))
             if f.tell() % 1024 == 0:
-                print '\r%d bytes read... (%d %%)' % (f.tell(), f.tell()*100/args.size),
+                print('\r%d bytes read... (%d %%)' % (f.tell(), f.tell()*100/args.size), end=' ')
                 sys.stdout.flush()
-        print 'Done!'
+        print('Done!')
 
     elif args.operation == 'write_flash':
         assert len(args.addr_filename) % 2 == 0
@@ -426,20 +433,20 @@ if __name__ == '__main__':
             filename = args.addr_filename[1]
             args.addr_filename = args.addr_filename[2:]
             image = file(filename, 'rb').read()
-            print 'Erasing flash...'
+            print('Erasing flash...')
             blocks = math.ceil(len(image)/float(esp.ESP_FLASH_BLOCK))
             esp.flash_begin(blocks*esp.ESP_FLASH_BLOCK, address)
             seq = 0
             while len(image) > 0:
-                print '\rWriting at 0x%08x... (%d %%)' % (address + seq*esp.ESP_FLASH_BLOCK, 100*(seq+1)/blocks),
+                print('\rWriting at 0x%08x... (%d %%)' % (address + seq*esp.ESP_FLASH_BLOCK, 100*(seq+1)/blocks), end=' ')
                 sys.stdout.flush()
                 block = image[0:esp.ESP_FLASH_BLOCK]
                 block = block + '\xe0' * (esp.ESP_FLASH_BLOCK-len(block))
                 esp.flash_block(block, seq)
                 image = image[esp.ESP_FLASH_BLOCK:]
                 seq += 1
-            print
-        print '\nLeaving...'
+            print()
+        print('\nLeaving...')
         esp.flash_finish(False)
 
     elif args.operation == 'run':
@@ -447,15 +454,15 @@ if __name__ == '__main__':
 
     elif args.operation == 'image_info':
         image = ESPFirmwareImage(args.filename)
-        print ('Entry point: %08x' % image.entrypoint) if image.entrypoint != 0 else 'Entry point not set'
-        print '%d segments' % len(image.segments)
-        print
+        print(('Entry point: %08x' % image.entrypoint) if image.entrypoint != 0 else 'Entry point not set')
+        print('%d segments' % len(image.segments))
+        print()
         checksum = ESPROM.ESP_CHECKSUM_MAGIC
         for (idx, (offset, size, data)) in enumerate(image.segments):
-            print 'Segment %d: %5d bytes at %08x' % (idx+1, size, offset)
+            print('Segment %d: %5d bytes at %08x' % (idx+1, size, offset))
             checksum = ESPROM.checksum(data, checksum)
-        print
-        print 'Checksum: %02x (%s)' % (image.checksum, 'valid' if image.checksum == checksum else 'invalid!')
+        print()
+        print('Checksum: %02x (%s)' % (image.checksum, 'valid' if image.checksum == checksum else 'invalid!'))
 
     elif args.operation == 'make_image':
         image = ESPFirmwareImage()
@@ -489,4 +496,4 @@ if __name__ == '__main__':
     elif args.operation == 'read_mac':
         mac0 = esp.read_reg(esp.ESP_OTP_MAC0)
         mac1 = esp.read_reg(esp.ESP_OTP_MAC1)
-        print 'MAC: 18:fe:34:%02x:%02x:%02x' % ((mac1 >> 8) & 0xff, mac1 & 0xff, (mac0 >> 24) & 0xff)
+        print('MAC: 18:fe:34:%02x:%02x:%02x' % ((mac1 >> 8) & 0xff, mac1 & 0xff, (mac0 >> 24) & 0xff))
